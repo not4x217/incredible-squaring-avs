@@ -1,9 +1,13 @@
 package operator
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"math/big"
+	"math/rand"
+	"net/http"
 	"os"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -334,6 +338,43 @@ func (o *Operator) ProcessNewTaskCreatedLog(newTaskCreatedLog *cstaskmanager.Con
 		"quorumNumbers", newTaskCreatedLog.Task.QuorumNumbers,
 		"QuorumThresholdPercentage", newTaskCreatedLog.Task.QuorumThresholdPercentage,
 	)
+
+	requestURL := fmt.Sprintf("http:://%s/compute", os.Getenv("LAMBADA_ADDRESS"))
+	requestBody := []byte(newTaskCreatedLog.Task.NumberToBeSquared.String())
+	resp, err := http.Post(requestURL, "application/octet-stream", bytes.NewBuffer(requestBody))
+	if err != nil {
+		fake := fakeNumberSquare()
+		o.logger.Errorf("failed to request squared number from lambada service -%s, faking result - %s",
+			err, fake.String())
+		return &cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse{
+			ReferenceTaskIndex: newTaskCreatedLog.TaskIndex,
+			NumberSquared:      fake,
+		}
+	}
+
+	defer resp.Body.Close()
+	respData, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fake := fakeNumberSquare()
+		o.logger.Errorf("failed to request squared number from lambada service -%s, faking result - %s",
+			err, fake.String())
+		return &cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse{
+			ReferenceTaskIndex: newTaskCreatedLog.TaskIndex,
+			NumberSquared:      fake,
+		}
+	}
+
+	squaredNumber := new(big.Int)
+	if _, err := fmt.Sscan(string(respData), squaredNumber); err != nil {
+		fake := fakeNumberSquare()
+		o.logger.Errorf("failed to request squared number from lambada service -%s, faking result - %s",
+			err, fake.String())
+		return &cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse{
+			ReferenceTaskIndex: newTaskCreatedLog.TaskIndex,
+			NumberSquared:      fake,
+		}
+	}
+
 	numberSquared := big.NewInt(0).Exp(newTaskCreatedLog.Task.NumberToBeSquared, big.NewInt(2), nil)
 	taskResponse := &cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse{
 		ReferenceTaskIndex: newTaskCreatedLog.TaskIndex,
@@ -356,4 +397,9 @@ func (o *Operator) SignTaskResponse(taskResponse *cstaskmanager.IIncredibleSquar
 	}
 	o.logger.Debug("Signed task response", "signedTaskResponse", signedTaskResponse)
 	return signedTaskResponse, nil
+}
+
+func fakeNumberSquare() *big.Int {
+	fakeResult := rand.Int()
+	return big.NewInt(int64(fakeResult))
 }
