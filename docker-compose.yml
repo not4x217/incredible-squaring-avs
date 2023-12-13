@@ -41,6 +41,18 @@ services:
     networks:
       - incredible-squaring-network
 
+  machine1:
+    image: zippiehq/cartesi-lambada:1.0
+    container_name: incredible-squaring-machine1
+    ports:
+      - 3033:3033
+    volumes:
+      - ./machine:/data/preload
+    networks:
+      - incredible-squaring-network
+    environment:
+      - COMPUTE_ONLY=1
+
   operator1:
     image: ghcr.io/layr-labs/incredible-squaring/operator/cmd/main.go:latest
     container_name: incredible-squaring-operator1
@@ -48,6 +60,8 @@ services:
       anvil:
         condition: service_started
       aggregator:
+        condition: service_started
+      machine1:
         condition: service_started
     ports:
       - "9090:9090" # prometheus metrics port (defined in operator-docker-compose.anvil.yaml file)
