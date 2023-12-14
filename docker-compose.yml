@@ -69,6 +69,9 @@ services:
         condition: service_started
       machine1:
         condition: service_started
+    environment:
+      - LAMBADA_ADDRESS=machine1:3033
+      - LAMBADA_COMPUTE_CID=bafybeifj3sxlv32iozehyokqcs677zlblg5eylsyzezvx3jiv24d3m52hq
     ports:
       - "9090:9090" # prometheus metrics port (defined in operator-docker-compose.anvil.yaml file)
     volumes:

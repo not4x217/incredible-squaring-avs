@@ -339,7 +339,10 @@ func (o *Operator) ProcessNewTaskCreatedLog(newTaskCreatedLog *cstaskmanager.Con
 		"QuorumThresholdPercentage", newTaskCreatedLog.Task.QuorumThresholdPercentage,
 	)
 
-	requestURL := fmt.Sprintf("http:://%s/compute", os.Getenv("LAMBADA_ADDRESS"))
+	requestURL := fmt.Sprintf("http://%s/compute/%s",
+		os.Getenv("LAMBADA_ADDRESS"),
+		os.Getenv("LAMBADA_COMPUTE_CID"),
+	)
 	requestBody := []byte(newTaskCreatedLog.Task.NumberToBeSquared.String())
 	resp, err := http.Post(requestURL, "application/octet-stream", bytes.NewBuffer(requestBody))
 	if err != nil {
