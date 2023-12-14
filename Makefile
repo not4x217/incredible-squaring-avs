@@ -34,13 +34,6 @@ start-anvil-chain-with-el-and-avs-deployed: ## starts anvil from a saved state f
 bindings: ## generates contract bindings
 	cd contracts && ./generate-go-bindings.sh
 
-___DOCKER___: ## 
-docker-build-and-publish-images: ## builds and publishes operator and aggregator docker images using Ko
-	KO_DOCKER_REPO=ghcr.io/layr-labs/incredible-squaring ko build aggregator/cmd/main.go --preserve-import-paths
-	KO_DOCKER_REPO=ghcr.io/layr-labs/incredible-squaring ko build operator/cmd/main.go --preserve-import-paths
-docker-start-everything: docker-build-and-publish-images ## starts aggregator and operator docker containers
-	docker compose pull && docker compose up
-
 __CLI__: ## 
 
 cli-setup-operator: send-fund cli-register-operator-with-eigenlayer cli-register-operator-bls-pubkeys cli-deposit-into-mocktoken-strategy cli-register-operator-with-avs ## registers operator with eigenlayer and avs

@@ -21,7 +21,10 @@ services:
       - incredible-squaring-network
 
   aggregator:
-    image: ghcr.io/layr-labs/incredible-squaring/aggregator/cmd/main.go:latest
+    #image: ghcr.io/layr-labs/incredible-squaring/aggregator/cmd/main.go:latest
+    build:
+      context: .
+      dockerfile: aggregator.Dockerfile
     container_name: incredible-squaring-aggregator
     depends_on:
       anvil:
@@ -54,7 +57,10 @@ services:
       - COMPUTE_ONLY=1
 
   operator1:
-    image: ghcr.io/layr-labs/incredible-squaring/operator/cmd/main.go:latest
+    #image: ghcr.io/layr-labs/incredible-squaring/operator/cmd/main.go:latest
+    build:
+      context: .
+      dockerfile: operator.Dockerfile
     container_name: incredible-squaring-operator1
     depends_on:
       anvil:
