@@ -3,6 +3,7 @@ package operator
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/big"
@@ -14,7 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ipfs/go-cid"
 	ipfs_api "github.com/ipfs/kubo/client/rpc"
-	ma "github.com/multiformats/go-multiaddr"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/Layr-Labs/incredible-squaring-avs/aggregator"
@@ -89,11 +89,8 @@ func NewOperatorFromConfig(c types.NodeConfig) (*Operator, error) {
 	avsAndEigenMetrics := metrics.NewAvsAndEigenMetrics(AVS_NAME, eigenMetrics, reg)
 
 	// Setup IPFS Api
-	ipfsAddr, err := ma.NewMultiaddr(os.Getenv("IPFS_ADDRESS"))
-	if err != nil {
-		return nil, fmt.Errorf("invalid ipfs multiaddr - %s", err)
-	}
-	ipfsApi, err := ipfs_api.NewApi(ipfsAddr)
+	ipfsURL := fmt.Sprintf("http://%s", os.Getenv("IPFS_ADDRESS"))
+	ipfsApi, err := ipfs_api.NewURLApiWithClient(ipfsURL, http.DefaultClient)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create IPFS API client - %s", err)
 	}
@@ -390,13 +387,19 @@ func (o *Operator) requestSquaredNumber(n *big.Int) (*big.Int, error) {
 	if err != nil {
 		return nil, err
 	}
-	resultCID, err := cid.Cast(respData)
+	jsonCID := struct {
+		CID string `json:"cid"`
+	}{}
+	if err = json.Unmarshal(respData, &jsonCID); err != nil {
+		return nil, err
+	}
+	cid, err := cid.Decode(jsonCID.CID)
 	if err != nil {
 		return nil, err
 	}
 
 	// Query squared number from IPFS.
-	squaredNumberData, err := o.ipfsClient.Dag().Get(context.TODO(), resultCID)
+	squaredNumberData, err := o.ipfsClient.Dag().Get(context.TODO(), cid)
 	if err != nil {
 		return nil, err
 	}
