@@ -12,6 +12,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ipfs/go-cid"
+	ipfs_api "github.com/ipfs/kubo/client/rpc"
+	ma "github.com/multiformats/go-multiaddr"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/Layr-Labs/incredible-squaring-avs/aggregator"
@@ -40,9 +43,10 @@ const AVS_NAME = "incredible-squaring"
 const SEM_VER = "0.0.1"
 
 type Operator struct {
-	config    types.NodeConfig
-	logger    logging.Logger
-	ethClient eth.EthClient
+	config     types.NodeConfig
+	logger     logging.Logger
+	ethClient  eth.EthClient
+	ipfsClient *ipfs_api.HttpApi
 	// TODO(samlaf): remove both avsWriter and eigenlayerWrite from operator
 	// they are only used for registration, so we should make a special registration package
 	// this way, auditing this operator code makes it obvious that operators don't need to
@@ -83,6 +87,16 @@ func NewOperatorFromConfig(c types.NodeConfig) (*Operator, error) {
 	reg := prometheus.NewRegistry()
 	eigenMetrics := sdkmetrics.NewEigenMetrics(AVS_NAME, c.EigenMetricsIpPortAddress, reg, logger)
 	avsAndEigenMetrics := metrics.NewAvsAndEigenMetrics(AVS_NAME, eigenMetrics, reg)
+
+	// Setup IPFS Api
+	ipfsAddr, err := ma.NewMultiaddr(os.Getenv("IPFS_ADDRESS"))
+	if err != nil {
+		return nil, fmt.Errorf("invalid ipfs multiaddr - %s", err)
+	}
+	ipfsApi, err := ipfs_api.NewApi(ipfsAddr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create IPFS API client - %s", err)
+	}
 
 	// Setup Node Api
 	nodeApi := nodeapi.NewNodeApi(AVS_NAME, SEM_VER, c.NodeApiIpPortAddress, logger)
@@ -238,6 +252,7 @@ func NewOperatorFromConfig(c types.NodeConfig) (*Operator, error) {
 		metrics:                            avsAndEigenMetrics,
 		nodeApi:                            nodeApi,
 		ethClient:                          ethRpcClient,
+		ipfsClient:                         ipfsApi,
 		avsWriter:                          avsWriter,
 		avsReader:                          avsReader,
 		avsSubscriber:                      avsSubscriber,
@@ -339,51 +354,58 @@ func (o *Operator) ProcessNewTaskCreatedLog(newTaskCreatedLog *cstaskmanager.Con
 		"QuorumThresholdPercentage", newTaskCreatedLog.Task.QuorumThresholdPercentage,
 	)
 
+	//numberSquared := big.NewInt(0).Exp(newTaskCreatedLog.Task.NumberToBeSquared, big.NewInt(2), nil)
+	numberSquared, err := o.requestSquaredNumber(newTaskCreatedLog.Task.NumberToBeSquared)
+	if err != nil {
+		fake := fakeNumberSquare()
+		o.logger.Errorf("failed to request squared number from lambada service -%s, faking result - %s",
+			err, fake.String())
+		return &cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse{
+			ReferenceTaskIndex: newTaskCreatedLog.TaskIndex,
+			NumberSquared:      fake,
+		}
+	} else {
+		return &cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse{
+			ReferenceTaskIndex: newTaskCreatedLog.TaskIndex,
+			NumberSquared:      numberSquared,
+		}
+	}
+}
+
+func (o *Operator) requestSquaredNumber(n *big.Int) (*big.Int, error) {
+	// Query lambada /compute endpoint.
 	requestURL := fmt.Sprintf("http://%s/compute/%s",
 		os.Getenv("LAMBADA_ADDRESS"),
 		os.Getenv("LAMBADA_COMPUTE_CID"),
 	)
-	requestBody := []byte(newTaskCreatedLog.Task.NumberToBeSquared.String())
+	requestBody := []byte(n.String())
 	resp, err := http.Post(requestURL, "application/octet-stream", bytes.NewBuffer(requestBody))
 	if err != nil {
-		fake := fakeNumberSquare()
-		o.logger.Errorf("failed to request squared number from lambada service -%s, faking result - %s",
-			err, fake.String())
-		return &cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse{
-			ReferenceTaskIndex: newTaskCreatedLog.TaskIndex,
-			NumberSquared:      fake,
-		}
+		return nil, err
 	}
 
+	// Parse CID with squared number.
 	defer resp.Body.Close()
 	respData, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fake := fakeNumberSquare()
-		o.logger.Errorf("failed to request squared number from lambada service -%s, faking result - %s",
-			err, fake.String())
-		return &cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse{
-			ReferenceTaskIndex: newTaskCreatedLog.TaskIndex,
-			NumberSquared:      fake,
-		}
+		return nil, err
+	}
+	resultCID, err := cid.Cast(respData)
+	if err != nil {
+		return nil, err
 	}
 
+	// Query squared number from IPFS.
+	squaredNumberData, err := o.ipfsClient.Dag().Get(context.TODO(), resultCID)
+	if err != nil {
+		return nil, err
+	}
 	squaredNumber := new(big.Int)
-	if _, err := fmt.Sscan(string(respData), squaredNumber); err != nil {
-		fake := fakeNumberSquare()
-		o.logger.Errorf("failed to request squared number from lambada service -%s, faking result - %s",
-			err, fake.String())
-		return &cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse{
-			ReferenceTaskIndex: newTaskCreatedLog.TaskIndex,
-			NumberSquared:      fake,
-		}
+	if _, err := fmt.Sscan(squaredNumberData.String(), squaredNumber); err != nil {
+		return nil, err
 	}
 
-	numberSquared := big.NewInt(0).Exp(newTaskCreatedLog.Task.NumberToBeSquared, big.NewInt(2), nil)
-	taskResponse := &cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse{
-		ReferenceTaskIndex: newTaskCreatedLog.TaskIndex,
-		NumberSquared:      numberSquared,
-	}
-	return taskResponse
+	return squaredNumber, nil
 }
 
 func (o *Operator) SignTaskResponse(taskResponse *cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse) (*aggregator.SignedTaskResponse, error) {

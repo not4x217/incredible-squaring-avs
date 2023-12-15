@@ -70,6 +70,7 @@ services:
       machine1:
         condition: service_started
     environment:
+      - IPFS_ADDRESS="/ip4/machine1/tcp/5001"
       - LAMBADA_ADDRESS=machine1:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
     ports:
