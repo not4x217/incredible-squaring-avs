@@ -45,7 +45,7 @@ services:
       - incredible-squaring-network
 
   machine1:
-    image: zippiehq/cartesi-lambada:1.0
+    image: zippiehq/cartesi-lambada:1.1
     container_name: incredible-squaring-machine1
     ports:
       - 3033:3033
