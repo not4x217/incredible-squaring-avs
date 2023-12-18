@@ -13,6 +13,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ipfs_files "github.com/ipfs/boxo/files"
+	ipfs_path "github.com/ipfs/boxo/path"
 	"github.com/ipfs/go-cid"
 	ipfs_api "github.com/ipfs/kubo/client/rpc"
 	"github.com/prometheus/client_golang/prometheus"
@@ -370,7 +372,7 @@ func (o *Operator) ProcessNewTaskCreatedLog(newTaskCreatedLog *cstaskmanager.Con
 }
 
 func (o *Operator) requestSquaredNumber(n *big.Int) (*big.Int, error) {
-	// Query lambada /compute endpoint.
+	// Query lambada compute endpoint.
 	requestURL := fmt.Sprintf("http://%s/compute/%s",
 		os.Getenv("LAMBADA_ADDRESS"),
 		os.Getenv("LAMBADA_COMPUTE_CID"),
@@ -399,12 +401,23 @@ func (o *Operator) requestSquaredNumber(n *big.Int) (*big.Int, error) {
 	}
 
 	// Query squared number from IPFS.
-	squaredNumberData, err := o.ipfsClient.Dag().Get(context.TODO(), cid)
+	squaredNumberPath, err := ipfs_path.NewPath(fmt.Sprintf("/ipfs/%s/output", cid.String()))
 	if err != nil {
 		return nil, err
 	}
+	squaredNumberNode, err := o.ipfsClient.Unixfs().Get(context.TODO(), squaredNumberPath)
+	if err != nil {
+		return nil, err
+	}
+	squaredNumberFile := ipfs_files.ToFile(squaredNumberNode)
+	defer squaredNumberFile.Close()
+	squaredNumberData, err := io.ReadAll(squaredNumberFile)
+	if err != nil {
+		return nil, err
+	}
+
 	squaredNumber := new(big.Int)
-	if _, err := fmt.Sscan(squaredNumberData.String(), squaredNumber); err != nil {
+	if _, err := fmt.Sscan(string(squaredNumberData), squaredNumber); err != nil {
 		return nil, err
 	}
 
