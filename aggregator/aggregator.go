@@ -71,6 +71,7 @@ type Aggregator struct {
 	avsWriter        chainio.AvsWriterer
 	// aggregation related fields
 	blsAggregationService blsagg.BlsAggregationService
+	taskIndex             types.TaskIndex
 	tasks                 map[types.TaskIndex]cstaskmanager.IIncredibleSquaringTaskManagerTask
 	tasksMu               sync.RWMutex
 	taskResponses         map[types.TaskIndex]map[sdktypes.TaskResponseDigest]cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse
@@ -143,6 +144,7 @@ func NewAggregator(c *config.Config) (*Aggregator, error) {
 		serverIpPortAddr:      c.AggregatorServerIpPortAddr,
 		avsWriter:             avsWriter,
 		blsAggregationService: blsAggregationService,
+		taskIndex:             0,
 		tasks:                 make(map[types.TaskIndex]cstaskmanager.IIncredibleSquaringTaskManagerTask),
 		taskResponses:         make(map[types.TaskIndex]map[sdktypes.TaskResponseDigest]cstaskmanager.IIncredibleSquaringTaskManagerTaskResponse),
 	}, nil
@@ -152,69 +154,15 @@ func (agg *Aggregator) Start(ctx context.Context) error {
 	agg.logger.Infof("Starting aggregator.")
 	agg.logger.Infof("Starting aggregator rpc server.")
 	go agg.startServer(ctx)
-
-	// 1. New task is generated every 10 seconds until first response is received.
-	// 2. Then new task is generated after each new response is received .
-
-	firstResponse := false
-	activeTasks := make(map[int64]*big.Int)
-
-	taskNum := int64(0)
-	numToSquare := big.NewInt(taskNum)
-	activeTasks[taskNum] = numToSquare
-
-	agg.logger.Info("Aggregator sending first task", "numberToSquare", numToSquare)
-	if err := agg.sendNewTask(numToSquare); err != nil {
-		agg.logger.Error("Aggregator failed to send number to square", "err", err)
-		delete(activeTasks, taskNum)
-	}
-
-	ticker := time.NewTicker(10 * time.Second)
-	defer ticker.Stop()
+	go agg.startAPIServer()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return nil
 		case blsAggServiceResp := <-agg.blsAggregationService.GetResponseChannel():
-			firstResponse = true
-
 			agg.logger.Info("Received response from blsAggregationService", "blsAggServiceResp", blsAggServiceResp)
 			agg.sendAggregatedResponseToContract(blsAggServiceResp)
-
-			delete(activeTasks, int64(blsAggServiceResp.TaskIndex))
-			if len(activeTasks) > 3 {
-				continue
-			}
-
-			taskNum++
-			numToSquare = big.NewInt(taskNum)
-			activeTasks[taskNum] = numToSquare
-
-			agg.logger.Info("Aggregator sending new task right after receving aggregated response", "numberToSquare", numToSquare)
-			if err := agg.sendNewTask(big.NewInt(taskNum)); err != nil {
-				agg.logger.Error("Aggregator failed to send number to square", "err", err)
-				delete(activeTasks, taskNum)
-				continue
-			}
-
-		case <-ticker.C:
-			if !firstResponse {
-				if len(activeTasks) > 3 {
-					continue
-				}
-
-				taskNum++
-				numToSquare = big.NewInt(taskNum)
-				activeTasks[taskNum] = numToSquare
-
-				agg.logger.Info("Aggregator sending new task on timer", "numberToSquare", numToSquare)
-				if err := agg.sendNewTask(big.NewInt(taskNum)); err != nil {
-					agg.logger.Error("Aggregator failed to send number to square", "err", err)
-					delete(activeTasks, taskNum)
-					continue
-				}
-			}
 		}
 	}
 }
@@ -262,14 +210,15 @@ func (agg *Aggregator) sendAggregatedResponseToContract(blsAggServiceResp blsagg
 
 // sendNewTask sends a new task to the task manager contract, and updates the Task dict struct
 // with the information of operators opted into quorum 0 at the block of task creation.
-func (agg *Aggregator) sendNewTask(numToSquare *big.Int) error {
+func (agg *Aggregator) sendNewTask(numToSquare *big.Int) (types.TaskIndex, error) {
 	// Send number to square to the task manager contract
 	newTask, taskIndex, err := agg.avsWriter.SendNewTaskNumberToSquare(context.Background(), numToSquare, types.QUORUM_THRESHOLD_NUMERATOR, types.QUORUM_NUMBERS)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	agg.tasksMu.Lock()
+	agg.taskIndex = taskIndex
 	agg.tasks[taskIndex] = newTask
 	agg.tasksMu.Unlock()
 
@@ -281,5 +230,5 @@ func (agg *Aggregator) sendNewTask(numToSquare *big.Int) error {
 	// and it should monitor the chain and only expire the task aggregation once the chain has reached that block number.
 	taskTimeToExpiry := taskChallengeWindowBlock * blockTimeSeconds
 	agg.blsAggregationService.InitializeNewTask(taskIndex, newTask.TaskCreatedBlock, newTask.QuorumNumbers, quorumThresholdPercentages, taskTimeToExpiry)
-	return nil
+	return taskIndex, nil
 }
