@@ -26,6 +26,8 @@ services:
       context: .
       dockerfile: aggregator.Dockerfile
     container_name: incredible-squaring-aggregator
+    ports:
+      - 8080:8080
     depends_on:
       anvil:
         condition: service_started
@@ -58,7 +60,6 @@ services:
       - COMPUTE_ONLY=1
 
   operator1:
-    #image: ghcr.io/layr-labs/incredible-squaring/operator/cmd/main.go:latest
     build:
       context: .
       dockerfile: operator.Dockerfile
@@ -71,6 +72,8 @@ services:
       machine1:
         condition: service_started
     environment:
+      - OPERATOR_BLS_KEY_PASSWORD=cblWpwmWx82BZCnuEshf
+      - OPERATOR_ECDSA_KEY_PASSWORD=utSWGdtSWugqsmq4VkaA
       - IPFS_ADDRESS=machine1:5001
       - LAMBADA_ADDRESS=machine1:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
@@ -79,22 +82,49 @@ services:
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
-    command: --config config-files/operator-docker-compose.anvil.yaml
+    command: --config config-files/operator1-docker-compose.anvil.yaml
     networks:
       - incredible-squaring-network
 
-  # operator2:
-  #   image: ghcr.io/layr-labs/incredible-squaring/operator/cmd/main.go:latest
-  #   container_name: incredible-squaring-operator2
-  #   depends_on:
-  #     anvil:
-  #       condition: service_started
-  #   volumes:
-  #     - ./:/incredible-squaring/
-  #   working_dir: /incredible-squaring
-  #   command: --config config-files/operator-docker-compose.anvil.yaml --credible-squaring-deployment contracts/script/output/31337/credible_squaring_avs_deployment_output.json --ecdsa-private-key 0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d --bls-private-key 2
-  #   networks:
-  #     - incredible-squaring-network
+  machine2:
+    image: zippiehq/cartesi-lambada:1.1
+    container_name: incredible-squaring-machine2
+    ports:
+      - 3034:3033
+      - 5002:5001
+    volumes:
+      - ./machine:/data/preload
+    networks:
+      - incredible-squaring-network
+    environment:
+      - COMPUTE_ONLY=1
+
+  operator2:
+    build:
+      context: .
+      dockerfile: operator.Dockerfile
+    container_name: incredible-squaring-operator2
+    depends_on:
+      anvil:
+        condition: service_started
+      aggregator:
+        condition: service_started
+      machine2:
+        condition: service_started
+    environment:
+      - OPERATOR_BLS_KEY_PASSWORD=urvrp7oRGO08qZcWoUae
+      - OPERATOR_ECDSA_KEY_PASSWORD=BBhIQMZTlKtHWGiI82pz
+      - IPFS_ADDRESS=machine2:5002
+      - LAMBADA_ADDRESS=machine2:3034
+      - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
+#    ports:
+#      - "9090:9090" # prometheus metrics port (defined in operator-docker-compose.anvil.yaml file)
+    volumes:
+      - ./:/incredible-squaring/
+    working_dir: /incredible-squaring
+    command: --config config-files/operator2-docker-compose.anvil.yaml
+    networks:
+      - incredible-squaring-network
 
   # METRICS RELATED
   grafana:
