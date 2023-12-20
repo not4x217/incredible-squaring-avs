@@ -72,8 +72,6 @@ services:
       machine1:
         condition: service_started
     environment:
-      - OPERATOR_BLS_KEY_PASSWORD=cblWpwmWx82BZCnuEshf
-      - OPERATOR_ECDSA_KEY_PASSWORD=utSWGdtSWugqsmq4VkaA
       - IPFS_ADDRESS=machine1:5001
       - LAMBADA_ADDRESS=machine1:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
@@ -112,8 +110,8 @@ services:
       machine2:
         condition: service_started
     environment:
-      - OPERATOR_BLS_KEY_PASSWORD=urvrp7oRGO08qZcWoUae
-      - OPERATOR_ECDSA_KEY_PASSWORD=BBhIQMZTlKtHWGiI82pz
+      - OPERATOR_BLS_KEY_PASSWORD=cblWpwmWx82BZCnuEshf
+      - OPERATOR_ECDSA_KEY_PASSWORD=utSWGdtSWugqsmq4VkaA
       - IPFS_ADDRESS=machine2:5002
       - LAMBADA_ADDRESS=machine2:3034
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
