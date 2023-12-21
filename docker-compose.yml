@@ -15,7 +15,7 @@ services:
     # changed entrypoint because the default 'bash -c' entrypoint wasn't working the intended way...
     entrypoint: anvil
     volumes:
-      - ./tests/integration/avs-and-eigenlayer-deployed-anvil-state.json:/root/.anvil/state.json
+      - ./tests/integration/avs-and-eigenlayer-deployed-anvil-state-operator2.json:/root/.anvil/state.json
     command: --host 0.0.0.0 --load-state /root/.anvil/state.json
     networks:
       - incredible-squaring-network
@@ -49,9 +49,9 @@ services:
   machine1:
     image: zippiehq/cartesi-lambada:1.1
     container_name: incredible-squaring-machine1
-    ports:
-      - 3033:3033
-      - 5001:5001
+    #ports:
+    #  - 3033:3033
+    #  - 5001:5001
     volumes:
       - ./machine:/data/preload
     networks:
@@ -87,9 +87,9 @@ services:
   machine2:
     image: zippiehq/cartesi-lambada:1.1
     container_name: incredible-squaring-machine2
-    ports:
-      - 3034:3033
-      - 5002:5001
+    #ports:
+    #  - 3034:3033
+    #  - 5002:5001
     volumes:
       - ./machine:/data/preload
     networks:
@@ -112,8 +112,8 @@ services:
     environment:
       - OPERATOR_BLS_KEY_PASSWORD=cblWpwmWx82BZCnuEshf
       - OPERATOR_ECDSA_KEY_PASSWORD=utSWGdtSWugqsmq4VkaA
-      - IPFS_ADDRESS=machine2:5002
-      - LAMBADA_ADDRESS=machine2:3034
+      - IPFS_ADDRESS=machine2:5001
+      - LAMBADA_ADDRESS=machine2:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
 #    ports:
 #      - "9090:9090" # prometheus metrics port (defined in operator-docker-compose.anvil.yaml file)

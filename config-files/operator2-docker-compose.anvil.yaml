@@ -1,7 +1,7 @@
 # this sets the logger level (true = info, false = debug)
 production: false
 
-operator_address: 0xF19308F923582A6f7c465e5CE7a9Dc1BEC6665B1
+operator_address: 0x6ede78c05b8e0568bee70ba09e7a688aec792ba9
 
 # EigenLayer Slasher contract address
 
