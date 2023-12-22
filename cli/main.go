@@ -64,6 +64,19 @@ func main() {
 			Usage:   "prints operator status as viewed from incredible squaring contracts",
 			Action:  actions.PrintOperatorStatus,
 		},
+		{
+			Name:    "generate-docker-compose",
+			Aliases: []string{"g"},
+			Usage:   "generate docker compose with specified number of operator nodes",
+			Action:  actions.GenerateDockerCompose,
+			Flags: []cli.Flag{
+				cli.UintFlag{
+					Name:     "operators",
+					Usage:    "number of operators nodes",
+					Required: true,
+				},
+			},
+		},
 	}
 
 	err := app.Run(os.Args)

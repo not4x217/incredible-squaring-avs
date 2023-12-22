@@ -1,21 +1,15 @@
-version: "3"
-
-networks:
-  incredible-squaring-network:
-    name: incredible-squaring-network
-    driver: bridge
+version: '3.8'
 
 services:
+
   anvil:
     image: ghcr.io/foundry-rs/foundry
     container_name: anvil
     ports:
-      # opening the port so we can easily cast to anvil from localhost
-      - "8545:8545"
-    # changed entrypoint because the default 'bash -c' entrypoint wasn't working the intended way...
+      - 8545:8545
     entrypoint: anvil
     volumes:
-      - ./tests/integration/avs-and-eigenlayer-deployed-anvil-state-operator2.json:/root/.anvil/state.json
+      - :/root/.anvil/state.json
     command: --host 0.0.0.0 --load-state /root/.anvil/state.json
     networks:
       - incredible-squaring-network
@@ -71,12 +65,10 @@ services:
       - IPFS_ADDRESS=machine1:5001
       - LAMBADA_ADDRESS=machine1:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
-    ports:
-      - "9090:9090" # prometheus metrics port (defined in operator-docker-compose.anvil.yaml file)
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
-    command: --config config-files/operator1-docker-compose.anvil.yaml
+    command: --config config-files/operators/operator1-docker-compose.yaml
     networks:
       - incredible-squaring-network
 
@@ -100,65 +92,48 @@ services:
         condition: service_started
       aggregator:
         condition: service_started
-      machine2:
+      machine1:
         condition: service_started
     environment:
-      - OPERATOR_BLS_KEY_PASSWORD=cblWpwmWx82BZCnuEshf
-      - OPERATOR_ECDSA_KEY_PASSWORD=utSWGdtSWugqsmq4VkaA
       - IPFS_ADDRESS=machine2:5001
       - LAMBADA_ADDRESS=machine2:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
-    command: --config config-files/operator2-docker-compose.anvil.yaml
+    command: --config config-files/operators/operator2-docker-compose.yaml
     networks:
       - incredible-squaring-network
 
-  # METRICS RELATED
-  grafana:
-    image: grafana/grafana:9.4.1
-    container_name: grafana
+  machine3:
+    image: zippiehq/cartesi-lambada:1.1
+    container_name: incredible-squaring-machine3
     volumes:
-      - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./machine:/data/preload
+    networks:
+      - incredible-squaring-network
     environment:
-      # See https://grafana.com/docs/grafana/latest/setup-grafana/configure-grafana/#override-configuration-with-environment-variables
-      # and https://grafana.com/docs/grafana/latest/setup-grafana/configure-docker/
-      # They recommend using env vars instead of overwriting config.ini
-      - GF_SECURITY_ADMIN_USER=${ADMIN_USER:-admin}
-      - GF_SECURITY_ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
-      - GF_USERS_ALLOW_SIGN_UP=false
-    restart: unless-stopped
-    ports:
-      - 3000:3000
-    networks:
-      - incredible-squaring-network
+      - COMPUTE_ONLY=1
 
-  prometheus:
-    image: prom/prometheus:v2.42.0
-    container_name: prometheus
+  operator3:
+    build:
+      context: .
+      dockerfile: operator.Dockerfile
+    container_name: incredible-squaring-operator3
+    depends_on:
+      anvil:
+        condition: service_started
+      aggregator:
+        condition: service_started
+      machine1:
+        condition: service_started
+    environment:
+      - IPFS_ADDRESS=machine3:5001
+      - LAMBADA_ADDRESS=machine3:3033
+      - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
     volumes:
-      - ./prometheus:/etc/prometheus
-      - prometheus_data:/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--web.console.libraries=/etc/prometheus/console_libraries"
-      - "--web.console.templates=/etc/prometheus/consoles"
-      - "--storage.tsdb.retention.time=200h"
-      - "--web.enable-lifecycle"
-      - --web.enable-remote-write-receiver
-    restart: unless-stopped
-    expose:
-      - 9090
+      - ./:/incredible-squaring/
+    working_dir: /incredible-squaring
+    command: --config config-files/operators/operator3-docker-compose.yaml
     networks:
       - incredible-squaring-network
-    # so that we can access the host from within the container
-    # needed to get the metrics from host.docker.internal:9184/metrics
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-volumes:
-  prometheus_data: {}
-  grafana_data: {}
