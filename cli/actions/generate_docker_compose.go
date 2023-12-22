@@ -1,9 +1,11 @@
 package actions
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 
 	"github.com/nikolalohinski/gonja"
 	"github.com/urfave/cli"
@@ -58,10 +60,36 @@ func GenerateDockerCompose(ctx *cli.Context) error {
 	}
 
 	// BLS and ECSDA keys.
+	if _, err := os.Stat("./docker-compose/operators/keys"); os.IsNotExist(err) {
+		if err = os.Mkdir("./docker-compose/operators/keys", os.ModePerm); err != nil {
+			return err
+		}
+	} else if err != nil {
+		if err = os.Remove("./docker-compose/operators/keys"); err != nil {
+			return err
+		}
+	}
+	egnkeyCmd := fmt.Sprintf(
+		"cd ./docker-compose/operators/keys && egnkey generate --key-type both --num-keys %d",
+		operatorCount,
+	)
+	if _, _, err := runCommand(egnkeyCmd); err != nil {
+		return err
+	}
 
 	// YAML config files.
 
 	// Anvil snapshot.
 
 	return nil
+}
+
+func runCommand(command string) (string, string, error) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	cmd := exec.Command("bash", "-c", command)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	return stdout.String(), stderr.String(), err
 }
