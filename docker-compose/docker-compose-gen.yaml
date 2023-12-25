@@ -68,7 +68,7 @@ services:
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
-    command: --config config-files/operators/operator1-docker-compose.yaml
+    command: --config docker-compose/operators/configs/operator1.yaml
     networks:
       - incredible-squaring-network
 
@@ -101,7 +101,7 @@ services:
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
-    command: --config config-files/operators/operator2-docker-compose.yaml
+    command: --config docker-compose/operators/configs/operator2.yaml
     networks:
       - incredible-squaring-network
 
@@ -134,6 +134,6 @@ services:
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
-    command: --config config-files/operators/operator3-docker-compose.yaml
+    command: --config docker-compose/operators/configs/operator3.yaml
     networks:
       - incredible-squaring-network
