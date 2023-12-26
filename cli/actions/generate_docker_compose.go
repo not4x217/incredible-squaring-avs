@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -14,9 +15,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/nikolalohinski/gonja"
 	"github.com/urfave/cli"
+
+	sdkutils "github.com/Layr-Labs/eigensdk-go/utils"
+	"github.com/Layr-Labs/incredible-squaring-avs/operator"
+	"github.com/Layr-Labs/incredible-squaring-avs/types"
 )
+
+// run beofer executing:
+// anvil --load-state tests/integration/avs-and-eigenlayer-deployed-anvil-state.json --dump-state docker-compose/anvil-state.json
 
 func GenerateDockerCompose(ctx *cli.Context) error {
 
@@ -101,11 +110,11 @@ func GenerateDockerCompose(ctx *cli.Context) error {
 	}); err != nil {
 		return err
 	}
-	_, _, _, blsKeyPaths, err := readKeyDir(blsKeyDir)
+	blsPwds, _, _, blsKeyPaths, err := readKeyDir(blsKeyDir)
 	if err != nil {
 		return err
 	}
-	_, _, ecdsaKeys, ecdsaKeyPaths, err := readKeyDir(ecdsaKeyDir)
+	ecdsaPwds, _, ecdsaKeys, ecdsaKeyPaths, err := readKeyDir(ecdsaKeyDir)
 	if err != nil {
 		return err
 	}
@@ -129,7 +138,7 @@ func GenerateDockerCompose(ctx *cli.Context) error {
 		if err := json.Unmarshal(keyData, &key); err != nil {
 			return err
 		}
-		ecdsaAddrs[i] = key.Address
+		ecdsaAddrs[i] = fmt.Sprintf("0x%s", key.Address)
 	}
 	for i := 0; i < int(operatorCount); i++ {
 		operators[i] = map[string]interface{}{}
@@ -158,7 +167,43 @@ func GenerateDockerCompose(ctx *cli.Context) error {
 		}
 	}
 
-	// Anvil snapshot.
+	// Update Anvil snapshot.
+
+	// Fund operator accounts with eth.
+	devAccount := "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
+	for i := 0; i < int(operatorCount); i++ {
+		sendFundsCmd := fmt.Sprintf(
+			"cast send %s --value 10ether --private-key %s",
+			ecdsaAddrs[i], devAccount,
+		)
+		if _, _, err := runCommand(sendFundsCmd); err != nil {
+			return err
+		}
+	}
+
+	// Operator must deposit into stragtegy, otherwise registration will fail.
+	for i, path := range configPaths {
+		if err := depositIntoStrategy(path, blsPwds[i], ecdsaPwds[i]); err != nil {
+			return err
+		}
+	}
+
+	// Start a process:
+	/*
+		anvil := exec.Command(
+			"anvil",
+			"--load-state", "tests/integration/avs-and-eigenlayer-deployed-anvil-state.json",
+			"--dump-state", "docker-compose/anvil-state.json",
+		)
+		if err := anvil.Start(); err != nil {
+			return err
+		}
+
+		// Kill it:
+		if err := anvil.Process.Signal(os.Interrupt); err != nil {
+			return err
+		}
+	*/
 
 	return nil
 }
@@ -228,7 +273,7 @@ func readFileLines(filePath string) ([]string, error) {
 				return nil, err
 			}
 		}
-		lines = append(lines, string(line))
+		lines = append(lines, string(line[:len(line)-1]))
 	}
 }
 
@@ -240,4 +285,36 @@ func runCommand(command string) (string, string, error) {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	return stdout.String(), stderr.String(), err
+}
+
+func depositIntoStrategy(configPath, blsPwd, ecdsaPwd string) error {
+	//!!!
+	fmt.Println(len(blsPwd), len(ecdsaPwd))
+
+	nodeConfig := types.NodeConfig{}
+	err := sdkutils.ReadYamlConfig(configPath, &nodeConfig)
+	if err != nil {
+		return err
+	}
+	nodeConfig.EthRpcUrl = "http://127.0.0.1:8545"
+	nodeConfig.EthWsUrl = "ws://127.0.0.1:8545"
+	// need to make sure we don't register the operator on startup
+	// when using the cli commands to register the operator.
+	nodeConfig.RegisterOperatorOnStartup = false
+
+	os.Setenv("OPERATOR_BLS_KEY_PASSWORD", blsPwd)
+	os.Setenv("OPERATOR_ECDSA_KEY_PASSWORD", ecdsaPwd)
+
+	operator, err := operator.NewOperatorFromConfig(nodeConfig)
+	if err != nil {
+		return err
+	}
+
+	strategyAddr := common.HexToAddress("0x7a2088a1bFc9d81c55368AE168C2C02570cB814F")
+	err = operator.DepositIntoStrategy(strategyAddr, big.NewInt(10))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
