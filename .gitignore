@@ -26,7 +26,3 @@ logs.txt
 
 # just for example
 id_rsa
-
-#
-docker-compose/operators/keys
-docker-compose/operators/

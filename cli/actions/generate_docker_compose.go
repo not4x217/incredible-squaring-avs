@@ -28,59 +28,28 @@ import (
 // anvil --load-state tests/integration/avs-and-eigenlayer-deployed-anvil-state.json --dump-state docker-compose/anvil-state.json
 
 func GenerateDockerCompose(ctx *cli.Context) error {
-
 	operatorCount := ctx.Uint("operators")
 	if operatorCount == 0 {
 		return errors.New("number of operators must be greater then 0")
 	}
 
-	// Docker compose.
-	operators := make([]map[string]interface{}, operatorCount)
-	configPaths := make([]string, operatorCount)
-	for i := 1; i <= int(operatorCount); i++ {
-		machine := fmt.Sprintf("machine%d", i)
-		configPaths[i-1] = filepath.Join(
-			"./docker-compose/operators/configs",
-			fmt.Sprintf("operator%d.yaml", i),
-		)
-		operators[i-1] = map[string]interface{}{
-			"name":            fmt.Sprintf("operator%d", i),
-			"machine":         machine,
-			"ipfs_address":    fmt.Sprintf("%s:5001", machine),
-			"lambada_address": fmt.Sprintf("%s:3033", machine),
-			"config_path":     configPaths[i-1],
+	// Clear "operators" directory
+	if _, err := os.Stat("./docker-compose/operators"); err == nil {
+		if err = os.RemoveAll("./docker-compose/operators"); err != nil {
+			return err
 		}
 	}
-	cofingTmpl, err := gonja.FromFile("./docker-compose/docker-compose.j2")
-	if err != nil {
+	if err := os.Mkdir("./docker-compose/operators", os.ModePerm); err != nil {
 		return err
 	}
-	if err != nil {
+	if err := os.Mkdir("./docker-compose/operators/keys", os.ModePerm); err != nil {
 		return err
 	}
-	compose, err := cofingTmpl.Execute(gonja.Context{"operators": operators})
-	if err != nil {
-		return err
-	}
-	composeFile, err := os.Create("./docker-compose/docker-compose-gen.yaml")
-	if err != nil {
-		return err
-	}
-	defer composeFile.Close()
-	if _, err = composeFile.WriteString(compose); err != nil {
+	if err := os.Mkdir("./docker-compose/operators/configs", os.ModePerm); err != nil {
 		return err
 	}
 
 	// Generate BLS and ecdsa keys.
-	if _, err := os.Stat("./docker-compose/operators/keys"); os.IsNotExist(err) {
-		if err = os.Mkdir("./docker-compose/operators/keys", os.ModePerm); err != nil {
-			return err
-		}
-	} else if err != nil {
-		if err = os.Remove("./docker-compose/operators/keys"); err != nil {
-			return err
-		}
-	}
 	egnkeyCmd := fmt.Sprintf(
 		"cd ./docker-compose/operators/keys && egnkey generate --key-type both --num-keys %d",
 		operatorCount,
@@ -118,17 +87,6 @@ func GenerateDockerCompose(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-
-	// Generate configuration files for each operator.
-	if _, err := os.Stat("./docker-compose/operators/configs"); os.IsNotExist(err) {
-		if err = os.Mkdir("./docker-compose/operators/configs", os.ModePerm); err != nil {
-			return err
-		}
-	} else if err != nil {
-		if err = os.Remove("./docker-compose/operators/configs"); err != nil {
-			return err
-		}
-	}
 	ecdsaAddrs := make([]string, len(ecdsaKeys))
 	for i, keyData := range ecdsaKeys {
 		key := struct {
@@ -140,16 +98,22 @@ func GenerateDockerCompose(ctx *cli.Context) error {
 		}
 		ecdsaAddrs[i] = fmt.Sprintf("0x%s", key.Address)
 	}
+
+	// Generate configuration files for each operator.
+	configPaths := make([]string, operatorCount)
 	for i := 0; i < int(operatorCount); i++ {
-		operators[i] = map[string]interface{}{}
-		cofingTmpl, err = gonja.FromFile("./docker-compose/operator-docker-compose.j2")
+		configPaths[i] = filepath.Join(
+			"./docker-compose/operators/configs",
+			fmt.Sprintf("operator%d.yaml", i+1),
+		)
+		tmpl, err := gonja.FromFile("./docker-compose/operator-docker-compose.j2")
 		if err != nil {
 			return err
 		}
 		if err != nil {
 			return err
 		}
-		config, err := cofingTmpl.Execute(gonja.Context{
+		config, err := tmpl.Execute(gonja.Context{
 			"address":        ecdsaAddrs[i],
 			"ecdsa_key_path": ecdsaKeyPaths[i],
 			"bls_key_path":   blsKeyPaths[i],
@@ -169,7 +133,9 @@ func GenerateDockerCompose(ctx *cli.Context) error {
 
 	// Update Anvil snapshot.
 
-	// Fund operator accounts with eth.
+	// TODO: start anvil and terminate it gracefully?
+
+	// Send eth to operator accounts.
 	devAccount := "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 	for i := 0; i < int(operatorCount); i++ {
 		sendFundsCmd := fmt.Sprintf(
@@ -188,22 +154,40 @@ func GenerateDockerCompose(ctx *cli.Context) error {
 		}
 	}
 
-	// Start a process:
-	/*
-		anvil := exec.Command(
-			"anvil",
-			"--load-state", "tests/integration/avs-and-eigenlayer-deployed-anvil-state.json",
-			"--dump-state", "docker-compose/anvil-state.json",
-		)
-		if err := anvil.Start(); err != nil {
-			return err
-		}
+	// Docker compose.
+	operators := make([]map[string]interface{}, operatorCount)
+	for i := 1; i <= int(operatorCount); i++ {
+		machine := fmt.Sprintf("machine%d", i)
 
-		// Kill it:
-		if err := anvil.Process.Signal(os.Interrupt); err != nil {
-			return err
+		operators[i-1] = map[string]interface{}{
+			"name":               fmt.Sprintf("operator%d", i),
+			"machine":            machine,
+			"ipfs_address":       fmt.Sprintf("%s:5001", machine),
+			"lambada_address":    fmt.Sprintf("%s:3033", machine),
+			"config_path":        configPaths[i-1],
+			"bls_key_password":   blsPwds[i-1],
+			"ecdsa_key_password": ecdsaPwds[i-1],
 		}
-	*/
+	}
+	cofingTmpl, err := gonja.FromFile("./docker-compose/docker-compose.j2")
+	if err != nil {
+		return err
+	}
+	if err != nil {
+		return err
+	}
+	compose, err := cofingTmpl.Execute(gonja.Context{"operators": operators})
+	if err != nil {
+		return err
+	}
+	composeFile, err := os.Create("./docker-compose-operators.yaml")
+	if err != nil {
+		return err
+	}
+	defer composeFile.Close()
+	if _, err = composeFile.WriteString(compose); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -288,9 +272,6 @@ func runCommand(command string) (string, string, error) {
 }
 
 func depositIntoStrategy(configPath, blsPwd, ecdsaPwd string) error {
-	//!!!
-	fmt.Println(len(blsPwd), len(ecdsaPwd))
-
 	nodeConfig := types.NodeConfig{}
 	err := sdkutils.ReadYamlConfig(configPath, &nodeConfig)
 	if err != nil {
