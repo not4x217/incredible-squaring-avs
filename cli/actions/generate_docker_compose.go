@@ -17,6 +17,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/nikolalohinski/gonja"
+	cp "github.com/otiai10/copy"
 	"github.com/urfave/cli"
 
 	sdkutils "github.com/Layr-Labs/eigensdk-go/utils"
@@ -46,6 +47,9 @@ func GenerateDockerCompose(ctx *cli.Context) error {
 		return err
 	}
 	if err := os.Mkdir("./docker-compose/operators/configs", os.ModePerm); err != nil {
+		return err
+	}
+	if err := os.Mkdir("./docker-compose/operators/data", os.ModePerm); err != nil {
 		return err
 	}
 
@@ -131,6 +135,15 @@ func GenerateDockerCompose(ctx *cli.Context) error {
 		}
 	}
 
+	// Generate directories for docker volume mount.
+	dataPaths := make([]string, operatorCount)
+	for i := 0; i < int(operatorCount); i++ {
+		dataPaths[i] = fmt.Sprintf("./docker-compose/operators/data/operator%d", i+1)
+		if err := cp.Copy("./machine-data", dataPaths[i]); err != nil {
+			return err
+		}
+	}
+
 	// Update Anvil snapshot.
 
 	// TODO: start anvil and terminate it gracefully?
@@ -165,6 +178,7 @@ func GenerateDockerCompose(ctx *cli.Context) error {
 			"ipfs_address":       fmt.Sprintf("%s:5001", machine),
 			"lambada_address":    fmt.Sprintf("%s:3033", machine),
 			"config_path":        configPaths[i-1],
+			"data_path":          dataPaths[i-1],
 			"bls_key_password":   blsPwds[i-1],
 			"ecdsa_key_password": ecdsaPwds[i-1],
 		}

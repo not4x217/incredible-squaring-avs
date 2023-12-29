@@ -10,6 +10,7 @@ require (
 	github.com/ipfs/boxo v0.16.0
 	github.com/ipfs/go-cid v0.4.1
 	github.com/nikolalohinski/gonja v1.5.3
+	github.com/otiai10/copy v1.14.0
 	github.com/prometheus/client_golang v1.17.0
 	github.com/stretchr/testify v1.8.4
 	github.com/testcontainers/testcontainers-go v0.26.0
