@@ -45,7 +45,7 @@ services:
       - incredible-squaring-network
 
   machine1:
-    image: zippiehq/cartesi-lambada:1.1
+    image: zippiehq/cartesi-lambada:1.5
     container_name: incredible-squaring-machine1
     volumes:
       - ./machine:/data/preload
@@ -70,8 +70,8 @@ services:
       - IPFS_ADDRESS=machine1:5001
       - LAMBADA_ADDRESS=machine1:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
-      - OPERATOR_BLS_KEY_PASSWORD=gVxrlpwImaqFYT7RHl8D
-      - OPERATOR_ECDSA_KEY_PASSWORD=P1sodc6LJxEMB3nuQWnd
+      - OPERATOR_BLS_KEY_PASSWORD=i7T8wuMObddGZ3vMiUCY
+      - OPERATOR_ECDSA_KEY_PASSWORD=wIokP5QdsbkDkRDl9Y6w
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
@@ -80,7 +80,7 @@ services:
       - incredible-squaring-network
 
   machine2:
-    image: zippiehq/cartesi-lambada:1.1
+    image: zippiehq/cartesi-lambada:1.5
     container_name: incredible-squaring-machine2
     volumes:
       - ./machine:/data/preload
@@ -105,8 +105,8 @@ services:
       - IPFS_ADDRESS=machine2:5001
       - LAMBADA_ADDRESS=machine2:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
-      - OPERATOR_BLS_KEY_PASSWORD=JR0GXDLLJKlUycrEKbxn
-      - OPERATOR_ECDSA_KEY_PASSWORD=eUveuniV8WuAzLpwxQIj
+      - OPERATOR_BLS_KEY_PASSWORD=Ridp7tXHs5dQ03J81isd
+      - OPERATOR_ECDSA_KEY_PASSWORD=8vpGggUVvb4LNhAQpkLD
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
@@ -115,7 +115,7 @@ services:
       - incredible-squaring-network
 
   machine3:
-    image: zippiehq/cartesi-lambada:1.1
+    image: zippiehq/cartesi-lambada:1.5
     container_name: incredible-squaring-machine3
     volumes:
       - ./machine:/data/preload
@@ -140,8 +140,8 @@ services:
       - IPFS_ADDRESS=machine3:5001
       - LAMBADA_ADDRESS=machine3:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
-      - OPERATOR_BLS_KEY_PASSWORD=zjRt1Nll7eDkdHgWAMEC
-      - OPERATOR_ECDSA_KEY_PASSWORD=k2Fn9t40OJbrRAurXVlP
+      - OPERATOR_BLS_KEY_PASSWORD=sIq759S9VoMtfTfD5qpH
+      - OPERATOR_ECDSA_KEY_PASSWORD=Q2xMKXBAfNKOJM5ESquh
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
@@ -150,7 +150,7 @@ services:
       - incredible-squaring-network
 
   machine4:
-    image: zippiehq/cartesi-lambada:1.1
+    image: zippiehq/cartesi-lambada:1.5
     container_name: incredible-squaring-machine4
     volumes:
       - ./machine:/data/preload
@@ -175,8 +175,8 @@ services:
       - IPFS_ADDRESS=machine4:5001
       - LAMBADA_ADDRESS=machine4:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
-      - OPERATOR_BLS_KEY_PASSWORD=2pVOATJUKUTwiMzdNB5p
-      - OPERATOR_ECDSA_KEY_PASSWORD=mPMcjP2pxJIYsunBtUgr
+      - OPERATOR_BLS_KEY_PASSWORD=07l8zMbjgq6DYs3zov4B
+      - OPERATOR_ECDSA_KEY_PASSWORD=nYMU7kf44lea9Be32Xoj
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
@@ -185,7 +185,7 @@ services:
       - incredible-squaring-network
 
   machine5:
-    image: zippiehq/cartesi-lambada:1.1
+    image: zippiehq/cartesi-lambada:1.5
     container_name: incredible-squaring-machine5
     volumes:
       - ./machine:/data/preload
@@ -210,8 +210,8 @@ services:
       - IPFS_ADDRESS=machine5:5001
       - LAMBADA_ADDRESS=machine5:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
-      - OPERATOR_BLS_KEY_PASSWORD=Ll9tHhNP493dOLcj7E4V
-      - OPERATOR_ECDSA_KEY_PASSWORD=h0ZCkwokauLdTjV59bDH
+      - OPERATOR_BLS_KEY_PASSWORD=OC38g703Ensf2Dbaawud
+      - OPERATOR_ECDSA_KEY_PASSWORD=md3r7bESmhkyykEWltH2
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
@@ -220,7 +220,7 @@ services:
       - incredible-squaring-network
 
   machine6:
-    image: zippiehq/cartesi-lambada:1.1
+    image: zippiehq/cartesi-lambada:1.5
     container_name: incredible-squaring-machine6
     volumes:
       - ./machine:/data/preload
@@ -245,8 +245,8 @@ services:
       - IPFS_ADDRESS=machine6:5001
       - LAMBADA_ADDRESS=machine6:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
-      - OPERATOR_BLS_KEY_PASSWORD=OlVXbancuKvzPyUlxJyv
-      - OPERATOR_ECDSA_KEY_PASSWORD=Wg4Mny8arEd5DDQcBSpa
+      - OPERATOR_BLS_KEY_PASSWORD=KcBPAkNBzUVftEYjXSMk
+      - OPERATOR_ECDSA_KEY_PASSWORD=sTmuFZjqJtidkFajR5hO
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
@@ -255,7 +255,7 @@ services:
       - incredible-squaring-network
 
   machine7:
-    image: zippiehq/cartesi-lambada:1.1
+    image: zippiehq/cartesi-lambada:1.5
     container_name: incredible-squaring-machine7
     volumes:
       - ./machine:/data/preload
@@ -280,8 +280,8 @@ services:
       - IPFS_ADDRESS=machine7:5001
       - LAMBADA_ADDRESS=machine7:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
-      - OPERATOR_BLS_KEY_PASSWORD=N4p2WBO0zdFXNXdyIZh6
-      - OPERATOR_ECDSA_KEY_PASSWORD=zN2H5upCdiLvUL9tXcGo
+      - OPERATOR_BLS_KEY_PASSWORD=UumEtd9liaByjIhol9nb
+      - OPERATOR_ECDSA_KEY_PASSWORD=XEandoUrlpHhAzzuzIbl
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
@@ -290,7 +290,7 @@ services:
       - incredible-squaring-network
 
   machine8:
-    image: zippiehq/cartesi-lambada:1.1
+    image: zippiehq/cartesi-lambada:1.5
     container_name: incredible-squaring-machine8
     volumes:
       - ./machine:/data/preload
@@ -315,8 +315,8 @@ services:
       - IPFS_ADDRESS=machine8:5001
       - LAMBADA_ADDRESS=machine8:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
-      - OPERATOR_BLS_KEY_PASSWORD=gqtnWJ0p2u5rRlPqc9Ew
-      - OPERATOR_ECDSA_KEY_PASSWORD=nAtH75opiGWKCFgDpzDV
+      - OPERATOR_BLS_KEY_PASSWORD=gdkcZB2OIuFlhoPAj85R
+      - OPERATOR_ECDSA_KEY_PASSWORD=TElEsWh0M9HBGNbvfDk7
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
@@ -325,7 +325,7 @@ services:
       - incredible-squaring-network
 
   machine9:
-    image: zippiehq/cartesi-lambada:1.1
+    image: zippiehq/cartesi-lambada:1.5
     container_name: incredible-squaring-machine9
     volumes:
       - ./machine:/data/preload
@@ -350,8 +350,8 @@ services:
       - IPFS_ADDRESS=machine9:5001
       - LAMBADA_ADDRESS=machine9:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
-      - OPERATOR_BLS_KEY_PASSWORD=ACluQvKafamg4NrPLijt
-      - OPERATOR_ECDSA_KEY_PASSWORD=jItz0gHhIrHdBRxUSPaP
+      - OPERATOR_BLS_KEY_PASSWORD=fmQyorxn2INxpGQltK82
+      - OPERATOR_ECDSA_KEY_PASSWORD=NPJ5TEIYJO6qY3mABuJt
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring
@@ -360,7 +360,7 @@ services:
       - incredible-squaring-network
 
   machine10:
-    image: zippiehq/cartesi-lambada:1.1
+    image: zippiehq/cartesi-lambada:1.5
     container_name: incredible-squaring-machine10
     volumes:
       - ./machine:/data/preload
@@ -385,8 +385,8 @@ services:
       - IPFS_ADDRESS=machine10:5001
       - LAMBADA_ADDRESS=machine10:3033
       - LAMBADA_COMPUTE_CID=bafybeif5liyov4oltxvc34qh3uyyxy5znisbmarsorxrp4nr3o7ywjuo5u
-      - OPERATOR_BLS_KEY_PASSWORD=UBOxJCbND9fXfdiacrFl
-      - OPERATOR_ECDSA_KEY_PASSWORD=l8JGj4863fQtBjo7E43x
+      - OPERATOR_BLS_KEY_PASSWORD=yungr0zJLZmpupmGXP2y
+      - OPERATOR_ECDSA_KEY_PASSWORD=Ddkk0L4sLqkUnzoNGReC
     volumes:
       - ./:/incredible-squaring/
     working_dir: /incredible-squaring

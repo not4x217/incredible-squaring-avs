@@ -1,6 +1,6 @@
 production: false
 
-operator_address: 0x83247bd87023475bf6648293c4d40f15902796e1
+operator_address: 0x62c93eb0db8d4e9536382e4d130317c312b7933d
 
 el_slasher_address: 0x5FC8d32690cc91D4c39d9d3abcBD16989F875707
 avs_service_manager_address: 0xc3e53F4d16Ae77Db1c982e75a937B9f60FE63690
@@ -10,8 +10,8 @@ bls_public_key_compendium_address: 0x322813Fd9A801c5507c9de605d63CEA4f2CE6c44
 eth_rpc_url: http://anvil:8545
 eth_ws_url: ws://anvil:8545
 
-ecdsa_private_key_store_path: docker-compose/operators/keys/ecdsa-3f846b5e-a4a2-11ee-b0b4-a036bcd1ceee/keys/1.ecdsa.key.json
-bls_private_key_store_path: docker-compose/operators/keys/bls-4282f11a-a4a2-11ee-b0b4-a036bcd1ceee/keys/1.bls.key.json
+ecdsa_private_key_store_path: docker-compose/operators/keys/ecdsa-01fdcf0e-a60b-11ee-bf8b-a036bcd1ceee/keys/1.ecdsa.key.json
+bls_private_key_store_path: docker-compose/operators/keys/bls-04f69dea-a60b-11ee-bf8b-a036bcd1ceee/keys/1.bls.key.json
 
 aggregator_server_ip_port_address: incredible-squaring-aggregator:8090
 

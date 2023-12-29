@@ -45,7 +45,7 @@ services:
       - incredible-squaring-network
 {% for operator in operators %}
   {{ operator.machine }}:
-    image: zippiehq/cartesi-lambada:1.1
+    image: zippiehq/cartesi-lambada:1.5
     container_name: incredible-squaring-{{ operator.machine }}
     volumes:
       - ./machine:/data/preload
